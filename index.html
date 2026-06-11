@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>會議簽名系統</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --border: #e2e4e9;
+      --text: #1a1d23;
+      --text-2: #6b7280;
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --danger: #dc2626;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    header h1 span { color: var(--accent); }
+    .btn-icon {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background .15s;
+    }
+    .btn-icon:hover { background: var(--bg); }
+
+    /* ── Main ── */
+    main { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+    /* ── Meeting panel ── */
+    .meeting-panel {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .meeting-panel h2 { font-size: 13px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+    .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .input-row input {
+      flex: 1;
+      min-width: 120px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .15s;
+      font-family: inherit;
+    }
+    .input-row input:focus { border-color: var(--accent); }
+
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .btn.secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn.success {
+      background: var(--success);
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 0 2px;
+    }
+    .status-bar .label { font-size: 13px; color: var(--text-2); }
+    .status-bar .count { font-size: 13px; font-weight: 600; }
+    .progress-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--success);
+      border-radius: 99px;
+      transition: width .4s;
+    }
+
+    /* ── Attendee list ── */
+    .attendee-list { display: flex; flex-direction: column; gap: 8px; }
+    .attendee-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .attendee-card:hover { border-color: var(--accent); background: var(--accent-light); }
+    .attendee-card.signed { border-color: var(--success); background: var(--success-light); cursor: default; }
+    .attendee-card.signed:hover { border-color: var(--success); background: var(--success-light); }
+
+    .avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 16px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .attendee-card.signed .avatar { background: var(--success-light); color: var(--success); }
+    .attendee-info { flex: 1; min-width: 0; }
+    .attendee-name { font-size: 15px; font-weight: 600; }
+    .attendee-title {
+      font-size: 12px;
+      color: var(--text-2);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: var(--bg);
+      color: var(--text-2);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .attendee-card.signed .status-badge { background: var(--success-light); color: var(--success); }
+
+    /* ── Empty / Loading states ── */
+    .state-box {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-2);
+    }
+    .state-box .icon { font-size: 36px; margin-bottom: 12px; }
+    .state-box p { font-size: 14px; line-height: 1.6; }
+
+    /* ── Modal base ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    @media (min-width: 560px) {
+      .overlay { align-items: center; }
+    }
+    .modal {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 520px;
+      max-height: 92dvh;
+      overflow-y: auto;
+      padding: 24px 20px 36px;
+      position: relative;
+    }
+    @media (min-width: 560px) {
+      .modal { border-radius: 20px; max-height: 88dvh; }
+    }
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .modal-subtitle { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+    .close-btn {
+      background: var(--bg);
+      border: none;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    /* ── Signature canvas ── */
+    .canvas-wrapper {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 12px;
+      touch-action: none;
+    }
+    .canvas-wrapper canvas { display: block; width: 100%; cursor: crosshair; }
+    .canvas-hint {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #d1d5db; font-size: 14px;
+      pointer-events: none; transition: opacity .2s;
+    }
+    .canvas-actions { display: flex; gap: 8px; margin-bottom: 20px; }
+
+    /* ── Photo upload ── */
+    .photo-section { margin-bottom: 20px; }
+    .photo-section label { font-size: 13px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 8px; }
+    .photo-drop {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .photo-drop:hover { border-color: var(--accent); background: var(--accent-light); }
+    .photo-drop input { display: none; }
+    .photo-drop .drop-icon { font-size: 28px; margin-bottom: 6px; }
+    .photo-drop p { font-size: 13px; color: var(--text-2); }
+    .photo-preview { border-radius: 10px; overflow: hidden; position: relative; }
+    .photo-preview img { width: 100%; display: block; border-radius: 10px; }
+    .photo-preview .remove-photo {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(0,0,0,.5); color: #fff; border: none;
+      border-radius: 50%; width: 28px; height: 28px;
+      font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Upload status ── */
+    .upload-status {
+      padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none;
+    }
+    .upload-status.loading { background: var(--accent-light); color: var(--accent); display: block; }
+    .upload-status.success { background: var(--success-light); color: var(--success); display: block; }
+    .upload-status.error   { background: #fef2f2; color: var(--danger); display: block; }
+
+    /* ── CSV upload zone ── */
+    .csv-upload-zone {
+      display: flex; align-items: center; gap: 10px;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      font-size: 14px; color: var(--text-2);
+    }
+    .csv-upload-zone:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .csv-upload-zone .csv-icon { font-size: 20px; flex-shrink: 0; }
+    .csv-loaded-badge {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--success-light);
+      border: 1.5px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px; color: var(--success);
+      margin-top: 6px;
+    }
+    .csv-loaded-badge button {
+      background: none; border: none; color: var(--success);
+      cursor: pointer; font-size: 13px; padding: 0 4px;
+      opacity: .7;
+    }
+    .csv-loaded-badge button:hover { opacity: 1; }
+
+    /* ── Settings modal ── */
+    .settings-form { display: flex; flex-direction: column; gap: 14px; }
+    .form-group label { font-size: 13px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 6px; }
+    .form-group input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .15s;
+      font-family: inherit;
+    }
+    .form-group input:focus { border-color: var(--accent); }
+    .form-group .hint { font-size: 11px; color: var(--text-2); margin-top: 4px; line-height: 1.5; }
+
+    /* Read-only info row */
+    .readonly-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      color: var(--text-2);
+      font-family: monospace;
+      letter-spacing: .02em;
+    }
+    .readonly-field .lock { font-size: 12px; opacity: .5; }
+
+    .settings-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 4px 0;
+    }
+    .settings-actions { display: flex; gap: 8px; }
+    .settings-actions .btn { flex: 1; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; margin-bottom: 16px; }
+    .tab {
+      flex: 1; padding: 8px; text-align: center;
+      font-size: 13px; font-weight: 600; border-radius: 6px;
+      cursor: pointer; color: var(--text-2);
+      transition: background .15s, color .15s;
+    }
+    .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1a1d23; color: #fff;
+      border-radius: 99px; padding: 10px 20px;
+      font-size: 14px; font-weight: 500;
+      z-index: 999; transition: transform .3s; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Share banner ── */
+    .share-banner {
+      background: var(--accent-light);
+      border: 1.5px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #1e40af;
+    }
+    .share-banner .icon { font-size: 20px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>會議<span>簽名</span>系統</h1>
+  <button class="btn-icon" id="settingsBtn" title="設定">⚙️</button>
+</header>
+
+<main>
+  <!-- Share banner (shown when opened via share link) -->
+  <div class="share-banner" id="shareBanner" style="display:none">
+    <span class="icon">🔗</span>
+    <span>已透過分享連結載入設定，請直接點選下方名單進行簽名。</span>
+  </div>
+
+  <!-- Meeting Panel -->
+  <div class="meeting-panel">
+    <h2>會議資訊</h2>
+    <div class="input-row">
+      <input type="text" id="meetingName" placeholder="會議名稱（如：董事會議）" />
+      <input type="date" id="meetingDate" />
+      <button class="btn" id="loadBtn" onclick="loadAttendees()">載入名單</button>
+    </div>
+  </div>
+
+  <!-- List area -->
+  <div id="listArea">
+    <div class="state-box">
+      <div class="icon">📋</div>
+      <p>輸入會議名稱後點擊「載入名單」</p>
+    </div>
+  </div>
+</main>
+
+<!-- Sign Modal -->
+<div class="overlay" id="signOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="signModalName">簽名</div>
+        <div class="modal-subtitle" id="signModalSub"></div>
+      </div>
+      <button class="close-btn" onclick="closeSignModal()">✕</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('sign')">✍️ 手寫簽名</div>
+      <div class="tab" onclick="switchTab('photo')">📷 上傳照片</div>
+    </div>
+
+    <!-- Sign tab -->
+    <div class="tab-panel active" id="tabSign">
+      <div class="canvas-wrapper">
+        <canvas id="sigCanvas" height="160"></canvas>
+        <div class="canvas-hint" id="canvasHint">請在此處簽名</div>
+      </div>
+      <div class="canvas-actions">
+        <button class="btn secondary" style="flex:1" onclick="clearCanvas()">清除重寫</button>
+      </div>
+    </div>
+
+    <!-- Photo tab -->
+    <div class="tab-panel" id="tabPhoto">
+      <div class="photo-section">
+        <label>上傳簽名照片或現場照片（選填）</label>
+        <div id="photoDropZone" class="photo-drop" onclick="document.getElementById('photoInput').click()">
+          <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhotoSelect(event)">
+          <div class="drop-icon">📷</div>
+          <p>點擊拍照或選擇圖片</p>
+        </div>
+        <div id="photoPreview" class="photo-preview" style="display:none">
+          <img id="previewImg" src="" alt="預覽">
+          <button class="remove-photo" onclick="clearPhoto()">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-status" id="uploadStatus"></div>
+    <button class="btn" style="width:100%" id="submitBtn" onclick="submitSignature()">確認簽名並上傳</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">系統設定</div>
+        <div class="modal-subtitle">管理員設定後複製分享連結給與會成員</div>
+      </div>
+      <button class="close-btn" onclick="closeSettings()">✕</button>
+    </div>
+
+    <div class="settings-form">
+
+      <!-- Editable fields -->
+      <div class="form-group">
+        <label>名單 CSV 檔案</label>
+        <div id="csvUploadZone" class="csv-upload-zone" onclick="document.getElementById('csvFileInput').click()">
+          <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none" onchange="handleCsvUpload(event)">
+          <span class="csv-icon">📄</span>
+          <span id="csvUploadLabel">點擊選擇 CSV 檔案</span>
+        </div>
+        <div id="csvLoadedBadge" class="csv-loaded-badge" style="display:none">
+          <span>✅ <span id="csvFilename"></span></span>
+          <button onclick="clearCsvData(event)">✕ 清除</button>
+        </div>
+        <div class="hint">CSV 須包含「姓名」與「職稱」欄位標題。上傳後內容會存入瀏覽器，分享連結自動帶入名單。</div>
+      </div>
+
+      <div class="form-group">
+        <label>GitHub Personal Access Token</label>
+        <input type="password" id="cfgToken" placeholder="ghp_… 或 github_pat_…" />
+        <div class="hint">⚠️ Token 僅存於您的瀏覽器，不會傳送至任何第三方。建議使用 Fine-grained PAT，只授予此 repo 的 Contents 寫入權限。</div>
+      </div>
+
+      <hr class="settings-divider">
+
+      <!-- Read-only info -->
+      <div class="form-group">
+        <label>GitHub Repository（自動偵測）</label>
+        <div class="readonly-field">
+          <span id="displayRepo">—</span>
+          <span class="lock">🔒</span>
+        </div>
+        <div class="hint">由 GitHub Pages 網址自動判斷，無需手動填寫</div>
+      </div>
+
+      <div class="form-group">
+        <label>GitHub Branch</label>
+        <div class="readonly-field">
+          <span>main</span>
+          <span class="lock">🔒</span>
+        </div>
+      </div>
+
+      <hr class="settings-divider">
+
+      <div class="settings-actions">
+        <button class="btn secondary" onclick="copyShareLink()">🔗 複製分享連結</button>
+        <button class="btn" onclick="saveSettings()">儲存設定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────
+const CFG_KEY      = 'msig_config';
+const CSV_DATA_KEY = 'msig_csv_data';
+const CSV_NAME_KEY = 'msig_csv_name';
+
+let config = {
+  token : ''
+};
+
+// Auto-detect repo from GitHub Pages URL
+function detectRepo() {
+  const host = window.location.hostname;
+  const path = window.location.pathname;
+  if (host.endsWith('.github.io')) {
+    const owner = host.replace('.github.io', '');
+    const parts = path.split('/').filter(Boolean);
+    const repo  = parts.length > 0 ? parts[0] : `${owner}.github.io`;
+    return `${owner}/${repo}`;
+  }
+  return null; // localhost / custom domain
+}
+
+const DETECTED_REPO   = detectRepo();
+const DETECTED_BRANCH = 'main';
+
+function updateRepoDisplay() {
+  const el = document.getElementById('displayRepo');
+  if (DETECTED_REPO) {
+    el.textContent = DETECTED_REPO;
+    el.style.color = 'var(--text)';
+  } else {
+    el.textContent = '本機開發模式（請設定 repo）';
+    el.style.color = 'var(--text-2)';
+  }
+}
+
+// ─── Load / Save config ───────────────────────────────────────────────────
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem(CFG_KEY);
+    if (saved) config = { ...config, ...JSON.parse(saved) };
+  } catch(e) {}
+  syncSettingsForm();
+}
+
+function syncSettingsForm() {
+  document.getElementById('cfgToken').value = config.token;
+  updateRepoDisplay();
+  updateCsvBadge();
+}
+
+function saveSettings() {
+  config.token = document.getElementById('cfgToken').value.trim();
+  localStorage.setItem(CFG_KEY, JSON.stringify(config));
+  closeSettings();
+  showToast('✅ 設定已儲存');
+}
+
+// ─── CSV file upload ────────────────────────────────────────────────────────
+function handleCsvUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    localStorage.setItem(CSV_DATA_KEY, ev.target.result);
+    localStorage.setItem(CSV_NAME_KEY, file.name);
+    updateCsvBadge();
+    showToast(`✅ 已載入：${file.name}`);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function clearCsvData(e) {
+  e && e.stopPropagation();
+  localStorage.removeItem(CSV_DATA_KEY);
+  localStorage.removeItem(CSV_NAME_KEY);
+  document.getElementById('csvFileInput').value = '';
+  updateCsvBadge();
+  showToast('已清除名單');
+}
+
+function updateCsvBadge() {
+  const name   = localStorage.getItem(CSV_NAME_KEY);
+  const badge  = document.getElementById('csvLoadedBadge');
+  const zone   = document.getElementById('csvUploadZone');
+  const label  = document.getElementById('csvUploadLabel');
+  if (name) {
+    badge.style.display = 'flex';
+    document.getElementById('csvFilename').textContent = name;
+    label.textContent = '重新上傳';
+    zone.style.borderStyle = 'solid';
+  } else {
+    badge.style.display = 'none';
+    label.textContent = '點擊選擇 CSV 檔案';
+    zone.style.borderStyle = 'dashed';
+  }
+}
+
+// ─── Share link (URL hash) ─────────────────────────────────────────────────
+function buildSharePayload() {
+  const meetingName = document.getElementById('meetingName').value.trim();
+  const meetingDate = document.getElementById('meetingDate').value;
+  return {
+    csvData     : localStorage.getItem(CSV_DATA_KEY) || '',
+    csvName     : localStorage.getItem(CSV_NAME_KEY) || 'attendees.csv',
+    token       : document.getElementById('cfgToken').value.trim() || config.token,
+    meetingName : meetingName,
+    meetingDate : meetingDate
+  };
+}
+
+function copyShareLink() {
+  const payload = buildSharePayload();
+  if (!payload.csvData) {
+    showToast('⚠️ 請先上傳 CSV 名單'); return;
+  }
+  if (!payload.token) {
+    showToast('⚠️ 請先填寫 GitHub Token'); return;
+  }
+  if (!payload.meetingName) {
+    showToast('⚠️ 請先在主畫面輸入會議名稱'); return;
+  }
+
+  // Save current settings first
+  config.token = payload.token;
+  localStorage.setItem(CFG_KEY, JSON.stringify(config));
+
+  try {
+    const hash = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    const url  = `${window.location.origin}${window.location.pathname}#${hash}`;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('✅ 分享連結已複製！可直接傳給與會成員');
+    }).catch(() => {
+      // Fallback: prompt
+      prompt('請複製以下連結：', url);
+    });
+  } catch(e) {
+    showToast('❌ 產生連結失敗：' + e.message);
+  }
+}
+
+// Parse hash config on page load
+function parseHashConfig() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return false;
+  try {
+    const data = JSON.parse(decodeURIComponent(escape(atob(hash))));
+    if (data.csvData) { localStorage.setItem(CSV_DATA_KEY, data.csvData); }
+    if (data.csvName) { localStorage.setItem(CSV_NAME_KEY, data.csvName); }
+    if (data.token)   { config.token = data.token; }
+    if (data.meetingName) document.getElementById('meetingName').value = data.meetingName;
+    if (data.meetingDate) document.getElementById('meetingDate').value = data.meetingDate;
+    // Save to localStorage so refreshing keeps the config
+    localStorage.setItem(CFG_KEY, JSON.stringify(config));
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+// ─── Settings modal ────────────────────────────────────────────────────────
+document.getElementById('settingsBtn').onclick = openSettings;
+
+function openSettings() {
+  syncSettingsForm();
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+
+// ─── Attendees ─────────────────────────────────────────────────────────────
+let attendees = [];
+let signedSet = new Set();
+let currentAttendee = null;
+
+const SESSION_KEY = () => {
+  const m = document.getElementById('meetingName').value.trim();
+  const d = document.getElementById('meetingDate').value;
+  return `msig_signed_${m}_${d}`;
+};
+
+function loadSignedState() {
+  try {
+    const saved = localStorage.getItem(SESSION_KEY());
+    if (saved) signedSet = new Set(JSON.parse(saved));
+    else signedSet = new Set();
+  } catch(e) { signedSet = new Set(); }
+}
+
+function saveSignedState() {
+  localStorage.setItem(SESSION_KEY(), JSON.stringify([...signedSet]));
+}
+
+async function loadAttendees() {
+  const meetingName = document.getElementById('meetingName').value.trim();
+  const meetingDate = document.getElementById('meetingDate').value;
+
+  if (!meetingName) { showToast('⚠️ 請輸入會議名稱'); return; }
+
+  const csvData = localStorage.getItem(CSV_DATA_KEY);
+  if (!csvData) { showToast('⚠️ 請先在設定中上傳 CSV 名單'); openSettings(); return; }
+
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  btn.textContent = '載入中…';
+
+  try {
+    attendees = parseCSV(csvData);
+    loadSignedState();
+    renderList(meetingName, meetingDate);
+    showToast(`✅ 已載入 ${attendees.length} 筆名單`);
+  } catch(err) {
+    document.getElementById('listArea').innerHTML =
+      `<div class="state-box"><div class="icon">❌</div><p>解析失敗：${err.message}</p></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '載入名單';
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  const headers  = splitCSVLine(lines[0]).map(h => h.trim());
+  const nameIdx  = headers.indexOf('姓名') >= 0 ? headers.indexOf('姓名') : 0;
+  const titleIdx = headers.indexOf('職稱');   // -1 if not present
+
+  return lines.slice(1).map((line, i) => {
+    const cols  = splitCSVLine(line);
+    const name  = cols[nameIdx]?.trim()                             || `第 ${i+1} 位`;
+    const title = titleIdx >= 0 ? (cols[titleIdx]?.trim() || '') : '';
+    return { name, title, id: `att_${i}` };
+  }).filter(a => a.name);
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (const c of line) {
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { result.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+function renderList(meetingName, meetingDate) {
+  const listArea = document.getElementById('listArea');
+  const signed   = attendees.filter(a => signedSet.has(a.id)).length;
+  const total    = attendees.length;
+  const pct      = total > 0 ? Math.round(signed / total * 100) : 0;
+
+  listArea.innerHTML = `
+    <div class="status-bar">
+      <span class="label">簽名進度</span>
+      <span class="count">${signed} / ${total} 人（${pct}%）</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="attendee-list" id="attendeeList"></div>
+  `;
+
+  const list = document.getElementById('attendeeList');
+  attendees.forEach(att => {
+    const isSigned = signedSet.has(att.id);
+    const card = document.createElement('div');
+    card.className = `attendee-card${isSigned ? ' signed' : ''}`;
+    card.dataset.id = att.id;
+    card.innerHTML = `
+      <div class="avatar">${isSigned ? '✓' : att.name.slice(0, 1)}</div>
+      <div class="attendee-info">
+        <div class="attendee-name">${att.name}</div>
+        ${att.title ? `<div class="attendee-title">${att.title}</div>` : ''}
+      </div>
+      <div class="status-badge">${isSigned ? '已簽名 ✓' : '待簽名'}</div>
+    `;
+    if (!isSigned) {
+      card.onclick = () => openSignModal(att, meetingName, meetingDate);
+    }
+    list.appendChild(card);
+  });
+}
+
+// ─── Sign Modal ─────────────────────────────────────────────────────────────
+let canvas, ctx, isDrawing = false, hasDrawn = false;
+let photoFile = null, photoDataUrl = null;
+
+function openSignModal(att, meetingName, meetingDate) {
+  currentAttendee = { ...att, meetingName, meetingDate };
+  document.getElementById('signModalName').textContent = att.name;
+  document.getElementById('signModalSub').textContent  = [att.title, meetingName].filter(Boolean).join('・');
+  document.getElementById('uploadStatus').className    = 'upload-status';
+  document.getElementById('uploadStatus').textContent  = '';
+  clearPhoto();
+  document.getElementById('signOverlay').classList.add('open');
+  switchTab('sign');
+  setTimeout(initCanvas, 50);
+}
+
+function closeSignModal() {
+  document.getElementById('signOverlay').classList.remove('open');
+  currentAttendee = null;
+}
+
+function initCanvas() {
+  canvas = document.getElementById('sigCanvas');
+  const wrapper = canvas.parentElement;
+  canvas.width  = wrapper.offsetWidth * devicePixelRatio;
+  canvas.height = 160 * devicePixelRatio;
+  canvas.style.height = '160px';
+  ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  ctx.strokeStyle = '#1a1d23';
+  ctx.lineWidth   = 2.5;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  hasDrawn = false;
+  document.getElementById('canvasHint').style.opacity = '1';
+}
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const src  = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+}
+
+function startDraw(e) {
+  e.preventDefault(); isDrawing = true;
+  const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  document.getElementById('canvasHint').style.opacity = '0';
+}
+function draw(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  hasDrawn = true;
+  const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+}
+function endDraw(e) { e.preventDefault(); isDrawing = false; }
+
+function clearCanvas() {
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hasDrawn = false;
+  document.getElementById('canvasHint').style.opacity = '1';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const c = document.getElementById('sigCanvas');
+  c.addEventListener('mousedown',  startDraw);
+  c.addEventListener('mousemove',  draw);
+  c.addEventListener('mouseup',    endDraw);
+  c.addEventListener('mouseleave', endDraw);
+  c.addEventListener('touchstart', startDraw, { passive: false });
+  c.addEventListener('touchmove',  draw,      { passive: false });
+  c.addEventListener('touchend',   endDraw,   { passive: false });
+});
+
+// ─── Tabs ──────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'sign') || (i === 1 && tab === 'photo'));
+  });
+  document.getElementById('tabSign').classList.toggle('active',  tab === 'sign');
+  document.getElementById('tabPhoto').classList.toggle('active', tab === 'photo');
+}
+
+// ─── Photo ──────────────────────────────────────────
+function handlePhotoSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  photoFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    photoDataUrl = ev.target.result;
+    document.getElementById('photoDropZone').style.display = 'none';
+    document.getElementById('photoPreview').style.display  = 'block';
+    document.getElementById('previewImg').src = photoDataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPhoto() {
+  photoFile = null; photoDataUrl = null;
+  document.getElementById('photoInput').value   = '';
+  document.getElementById('photoDropZone').style.display = 'block';
+  document.getElementById('photoPreview').style.display  = 'none';
+  document.getElementById('previewImg').src = '';
+}
+
+// ─── Submit ──────────────────────────────────────────
+async function submitSignature() {
+  if (!currentAttendee) return;
+
+  const hasSignature = hasDrawn;
+  const hasPhoto     = !!photoDataUrl;
+
+  if (!hasSignature && !hasPhoto) {
+    showStatus('\u26a0\ufe0f \u8acb\u5148\u7c3d\u540d\u6216\u4e0a\u50b3\u7167\u7247', 'error'); return;
+  }
+
+  const repo = DETECTED_REPO;
+  if (!config.token) { showStatus('\u26a0\ufe0f \u7f3a\u5c11 GitHub Token\uff0c\u8acb\u806f\u7d61\u7ba1\u7406\u54e1', 'error'); return; }
+  if (!repo)         { showStatus('\u26a0\ufe0f \u7121\u6cd5\u5075\u6e2c GitHub Repo\uff0c\u8acb\u78ba\u8a8d\u5df2\u90e8\u7f72\u81f3 GitHub Pages', 'error'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  showStatus('\u23f3 \u4e0a\u50b3\u4e2d\u2026', 'loading');
+
+  const timestamp = Date.now();
+  const safeName  = currentAttendee.name.replace(/[\/\\:*?"<>|]/g, '_');
+  const folder    = ('signatures/' + currentAttendee.meetingName + '_' + (currentAttendee.meetingDate || timestamp)).replace(/\s/g, '_');
+
+  try {
+    const uploads = [];
+
+    if (hasSignature) {
+      const sigBase64 = canvas.toDataURL('image/png').split(',')[1];
+      uploads.push(uploadToGitHub(
+        repo, folder + '/' + safeName + '_sig_' + timestamp + '.png', sigBase64,
+        '\u7c3d\u540d\uff1a' + currentAttendee.name + ' [' + currentAttendee.meetingName + ']'
+      ));
+    }
+
+    if (hasPhoto) {
+      const photoBase64 = photoDataUrl.split(',')[1];
+      const ext = photoFile && photoFile.type && photoFile.type.includes('jpeg') ? 'jpg' : 'png';
+      uploads.push(uploadToGitHub(
+        repo, folder + '/' + safeName + '_photo_' + timestamp + '.' + ext, photoBase64,
+        '\u7167\u7247\uff1a' + currentAttendee.name + ' [' + currentAttendee.meetingName + ']'
+      ));
+    }
+
+    await Promise.all(uploads);
+
+    signedSet.add(currentAttendee.id);
+    saveSignedState();
+    showStatus('\u2705 \u4e0a\u50b3\u6210\u529f\uff01', 'success');
+    setTimeout(() => {
+      closeSignModal();
+      renderList(currentAttendee.meetingName, currentAttendee.meetingDate);
+    }, 1200);
+  } catch(err) {
+    showStatus('\u274c \u4e0a\u50b3\u5931\u6557\uff1a' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function uploadToGitHub(repo, path, base64Content, message) {
+  const parts = repo.split('/');
+  const owner = parts[0], repoName = parts[1];
+  const url = 'https://api.github.com/repos/' + owner + '/' + repoName + '/contents/' + path;
+  const headers = {
+    'Authorization': 'Bearer ' + config.token,
+    'Content-Type' : 'application/json',
+    'Accept'       : 'application/vnd.github+json'
+  };
+
+  let sha;
+  try {
+    const chk = await fetch(url, { headers });
+    if (chk.ok) sha = (await chk.json()).sha;
+  } catch(e) {}
+
+  const body = { message: message, content: base64Content, branch: DETECTED_BRANCH };
+  if (sha) body.sha = sha;
+
+  const res = await fetch(url, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'GitHub API ' + res.status);
+  }
+  return res.json();
+}
+
+// ─── Helpers ──────────────────────────────────────────
+function showStatus(msg, type) {
+  const el = document.getElementById('uploadStatus');
+  el.textContent = msg;
+  el.className = 'upload-status ' + type;
+}
+
+function showToast(msg, dur) {
+  dur = dur || 2800;
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+document.querySelectorAll('.overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ─── Init ──────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  document.getElementById('meetingDate').valueAsDate = new Date();
+
+  const fromHash = parseHashConfig();
+  if (fromHash) {
+    document.getElementById('shareBanner').style.display = 'flex';
+    syncSettingsForm();
+    if (document.getElementById('meetingName').value.trim()) {
+      loadAttendees();
+    }
+  } else if (!localStorage.getItem(CSV_DATA_KEY) || !config.token) {
+    setTimeout(openSettings, 400);
+  }
+});
+</script>
+</body>
+</html>
