@@ -6,7 +6,6 @@
   <title>會議簽名系統</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
       --bg: #f4f5f7;
       --surface: #ffffff;
@@ -18,10 +17,9 @@
       --success: #16a34a;
       --success-light: #f0fdf4;
       --danger: #dc2626;
-      --radius: 12px;
+      --radius: 14px;
       --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
     }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif;
       background: var(--bg);
@@ -37,397 +35,383 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      position: sticky; top: 0; z-index: 10;
     }
-    header h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    header h1 { font-size: 17px; font-weight: 700; }
     header h1 span { color: var(--accent); }
+    .header-actions { display: flex; gap: 8px; }
     .btn-icon {
-      background: none;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      width: 36px; height: 36px;
+      background: none; border: 1.5px solid var(--border);
+      border-radius: 8px; width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background .15s;
+      cursor: pointer; font-size: 16px; transition: background .15s;
     }
     .btn-icon:hover { background: var(--bg); }
 
-    /* ── Main ── */
-    main { padding: 20px; max-width: 600px; margin: 0 auto; }
+    /* ── Shared layout ── */
+    .page { display: none; }
+    .page.active { display: block; }
+    .container { max-width: 560px; margin: 0 auto; padding: 24px 20px 48px; }
 
-    /* ── Meeting panel ── */
-    .meeting-panel {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: var(--shadow);
-      margin-bottom: 20px;
+    /* ── Step indicator ── */
+    .steps {
+      display: flex; align-items: center; gap: 0;
+      margin-bottom: 28px;
     }
-    .meeting-panel h2 { font-size: 13px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
-    .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .input-row input {
+    .step-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
       flex: 1;
-      min-width: 120px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color .15s;
-      font-family: inherit;
     }
-    .input-row input:focus { border-color: var(--accent); }
+    .step-circle {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      background: var(--border); color: var(--text-2);
+      transition: background .2s, color .2s;
+    }
+    .step-item.active   .step-circle { background: var(--accent); color: #fff; }
+    .step-item.done     .step-circle { background: var(--success); color: #fff; }
+    .step-label { font-size: 11px; color: var(--text-2); text-align: center; white-space: nowrap; }
+    .step-item.active .step-label { color: var(--accent); font-weight: 600; }
+    .step-item.done   .step-label { color: var(--success); }
+    .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px; margin-bottom: 16px; flex-shrink: 1; max-width: 48px; transition: background .2s; }
+    .step-line.done { background: var(--success); }
 
-    .btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 18px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: opacity .15s;
+    /* ── Card ── */
+    .card {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 24px; box-shadow: var(--shadow); margin-bottom: 16px;
     }
-    .btn:hover { opacity: .85; }
+    .card-title { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+    .card-sub { font-size: 13px; color: var(--text-2); margin-bottom: 24px; line-height: 1.5; }
+
+    /* ── Form elements ── */
+    .form-group { margin-bottom: 18px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-group label { font-size: 13px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 7px; }
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="password"] {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 9px;
+      padding: 11px 14px; font-size: 15px; outline: none;
+      transition: border-color .15s; font-family: inherit; background: var(--surface);
+    }
+    .form-group input:focus { border-color: var(--accent); }
+    .form-group .hint { font-size: 11px; color: var(--text-2); margin-top: 5px; line-height: 1.5; }
+
+    /* ── CSV upload zone ── */
+    .csv-zone {
+      border: 2px dashed var(--border); border-radius: 9px;
+      padding: 16px 18px; display: flex; align-items: center; gap: 12px;
+      cursor: pointer; transition: border-color .15s, background .15s;
+      font-size: 14px; color: var(--text-2);
+    }
+    .csv-zone:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .csv-zone .csv-icon { font-size: 22px; flex-shrink: 0; }
+    .csv-zone input { display: none; }
+    .csv-badge {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--success-light); border: 1.5px solid #bbf7d0;
+      border-radius: 9px; padding: 10px 14px;
+      font-size: 13px; color: var(--success);
+    }
+    .csv-badge button {
+      background: none; border: none; color: var(--success);
+      cursor: pointer; font-size: 13px; padding: 0 4px; opacity: .7;
+    }
+    .csv-badge button:hover { opacity: 1; }
+
+    /* ── Buttons ── */
+    .btn {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 9px; padding: 13px 20px; font-size: 15px;
+      font-weight: 600; cursor: pointer; width: 100%;
+      transition: opacity .15s; letter-spacing: -.1px;
+    }
+    .btn:hover { opacity: .88; }
     .btn:disabled { opacity: .4; cursor: default; }
     .btn.secondary {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       border: 1.5px solid var(--border);
     }
-    .btn.success {
-      background: var(--success);
-    }
+    .btn.success-btn { background: var(--success); }
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn { flex: 1; }
 
-    /* ── Status bar ── */
-    .status-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      padding: 0 2px;
+    /* ── Share link box ── */
+    .share-box {
+      background: var(--accent-light); border: 1.5px solid #bfdbfe;
+      border-radius: 9px; padding: 14px 16px; margin-bottom: 16px;
     }
+    .share-url {
+      font-size: 12px; font-family: monospace; color: var(--accent);
+      word-break: break-all; line-height: 1.6;
+      margin-bottom: 10px;
+    }
+    .copy-btn {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 7px; padding: 9px 16px; font-size: 13px;
+      font-weight: 600; cursor: pointer; width: 100%;
+      transition: opacity .15s;
+    }
+    .copy-btn:hover { opacity: .85; }
+    .copy-btn.copied { background: var(--success); }
+
+    .info-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg); border-radius: 9px;
+      padding: 12px 14px; font-size: 13px; color: var(--text-2);
+      margin-bottom: 10px;
+    }
+    .info-row .info-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* ── Member page ── */
+    .meeting-header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+    }
+    .meeting-header .meeting-title { font-size: 16px; font-weight: 700; }
+    .meeting-header .meeting-date  { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+    .list-container { max-width: 560px; margin: 0 auto; padding: 20px; }
+    .status-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .status-bar .label { font-size: 13px; color: var(--text-2); }
     .status-bar .count { font-size: 13px; font-weight: 600; }
-    .progress-track {
-      height: 4px;
-      background: var(--border);
-      border-radius: 99px;
-      margin-bottom: 16px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: var(--success);
-      border-radius: 99px;
-      transition: width .4s;
-    }
+    .progress-track { height: 4px; background: var(--border); border-radius: 99px; margin-bottom: 16px; overflow: hidden; }
+    .progress-fill  { height: 100%; background: var(--success); border-radius: 99px; transition: width .4s; }
+    .attendee-list  { display: flex; flex-direction: column; gap: 8px; }
 
-    /* ── Attendee list ── */
-    .attendee-list { display: flex; flex-direction: column; gap: 8px; }
     .attendee-card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      box-shadow: var(--shadow);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      border: 1.5px solid transparent;
-      transition: border-color .15s, background .15s;
+      background: var(--surface); border-radius: var(--radius);
+      padding: 14px 16px; box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; border: 1.5px solid transparent;
+      transition: border-color .15s, background .15s, opacity .15s;
       user-select: none;
     }
     .attendee-card:hover { border-color: var(--accent); background: var(--accent-light); }
-    .attendee-card.signed { border-color: var(--success); background: var(--success-light); cursor: default; }
-    .attendee-card.signed:hover { border-color: var(--success); background: var(--success-light); }
+    .attendee-card.signed { border-color: var(--success); background: var(--success-light); }
+    .attendee-card.signed:hover { opacity: .85; }
 
     .avatar {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: var(--accent-light);
-      color: var(--accent);
-      font-size: 16px;
-      font-weight: 700;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent-light); color: var(--accent);
+      font-size: 16px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
     .attendee-card.signed .avatar { background: var(--success-light); color: var(--success); }
     .attendee-info { flex: 1; min-width: 0; }
-    .attendee-name { font-size: 15px; font-weight: 600; }
-    .attendee-title {
-      font-size: 12px;
-      color: var(--text-2);
-      margin-top: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .attendee-name  { font-size: 15px; font-weight: 600; }
+    .attendee-title { font-size: 12px; color: var(--text-2); margin-top: 3px; }
     .status-badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 99px;
-      background: var(--bg);
-      color: var(--text-2);
-      white-space: nowrap;
-      flex-shrink: 0;
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 99px; background: var(--bg); color: var(--text-2);
+      white-space: nowrap; flex-shrink: 0; text-align: center;
+      line-height: 1.4;
     }
     .attendee-card.signed .status-badge { background: var(--success-light); color: var(--success); }
 
-    /* ── Empty / Loading states ── */
-    .state-box {
-      text-align: center;
-      padding: 48px 20px;
-      color: var(--text-2);
-    }
-    .state-box .icon { font-size: 36px; margin-bottom: 12px; }
-    .state-box p { font-size: 14px; line-height: 1.6; }
-
-    /* ── Modal base ── */
+    /* ── Sign Modal ── */
     .overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.45);
-      z-index: 100;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 100; display: none; align-items: flex-end; justify-content: center;
     }
     .overlay.open { display: flex; }
-    @media (min-width: 560px) {
-      .overlay { align-items: center; }
-    }
+    @media (min-width: 560px) { .overlay { align-items: center; } }
     .modal {
-      background: var(--surface);
-      border-radius: 20px 20px 0 0;
-      width: 100%;
-      max-width: 520px;
-      max-height: 92dvh;
-      overflow-y: auto;
-      padding: 24px 20px 36px;
-      position: relative;
+      background: var(--surface); border-radius: 20px 20px 0 0;
+      width: 100%; max-width: 520px; max-height: 90dvh;
+      overflow-y: auto; padding: 24px 20px 36px;
     }
-    @media (min-width: 560px) {
-      .modal { border-radius: 20px; max-height: 88dvh; }
-    }
-    .modal-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .modal-title { font-size: 17px; font-weight: 700; }
+    @media (min-width: 560px) { .modal { border-radius: 20px; } }
+    .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+    .modal-title    { font-size: 17px; font-weight: 700; }
     .modal-subtitle { font-size: 12px; color: var(--text-2); margin-top: 3px; }
     .close-btn {
-      background: var(--bg);
-      border: none;
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      font-size: 16px;
-      cursor: pointer;
+      background: var(--bg); border: none; width: 30px; height: 30px;
+      border-radius: 50%; font-size: 16px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      margin-left: 12px;
+      flex-shrink: 0; margin-left: 12px;
     }
-
-    /* ── Signature canvas ── */
     .canvas-wrapper {
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      background: #fff;
-      position: relative;
-      overflow: hidden;
-      margin-bottom: 12px;
-      touch-action: none;
+      border: 2px solid var(--border); border-radius: 10px;
+      background: #fff; position: relative; overflow: hidden;
+      margin-bottom: 12px; touch-action: none;
     }
     .canvas-wrapper canvas { display: block; width: 100%; cursor: crosshair; }
     .canvas-hint {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
+      position: absolute; inset: 0; display: flex;
+      align-items: center; justify-content: center;
       color: #d1d5db; font-size: 14px;
       pointer-events: none; transition: opacity .2s;
     }
-    .canvas-actions { display: flex; gap: 8px; margin-bottom: 20px; }
-
-    /* ── Photo upload ── */
-    .photo-section { margin-bottom: 20px; }
-    .photo-section label { font-size: 13px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 8px; }
-    .photo-drop {
-      border: 2px dashed var(--border);
-      border-radius: 10px;
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .15s, background .15s;
-    }
-    .photo-drop:hover { border-color: var(--accent); background: var(--accent-light); }
-    .photo-drop input { display: none; }
-    .photo-drop .drop-icon { font-size: 28px; margin-bottom: 6px; }
-    .photo-drop p { font-size: 13px; color: var(--text-2); }
-    .photo-preview { border-radius: 10px; overflow: hidden; position: relative; }
-    .photo-preview img { width: 100%; display: block; border-radius: 10px; }
-    .photo-preview .remove-photo {
-      position: absolute; top: 8px; right: 8px;
-      background: rgba(0,0,0,.5); color: #fff; border: none;
-      border-radius: 50%; width: 28px; height: 28px;
-      font-size: 14px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    /* ── Upload status ── */
+    .canvas-actions { margin-bottom: 20px; }
     .upload-status {
       padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none;
     }
     .upload-status.loading { background: var(--accent-light); color: var(--accent); display: block; }
     .upload-status.success { background: var(--success-light); color: var(--success); display: block; }
     .upload-status.error   { background: #fef2f2; color: var(--danger); display: block; }
-
-    /* ── CSV upload zone ── */
-    .csv-upload-zone {
-      display: flex; align-items: center; gap: 10px;
-      border: 2px dashed var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      cursor: pointer;
-      transition: border-color .15s, background .15s;
-      font-size: 14px; color: var(--text-2);
+    .submit-btn {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 9px; padding: 13px; font-size: 15px;
+      font-weight: 600; cursor: pointer; width: 100%; transition: opacity .15s;
     }
-    .csv-upload-zone:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
-    .csv-upload-zone .csv-icon { font-size: 20px; flex-shrink: 0; }
-    .csv-loaded-badge {
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--success-light);
-      border: 1.5px solid #bbf7d0;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 13px; color: var(--success);
-      margin-top: 6px;
-    }
-    .csv-loaded-badge button {
-      background: none; border: none; color: var(--success);
-      cursor: pointer; font-size: 13px; padding: 0 4px;
-      opacity: .7;
-    }
-    .csv-loaded-badge button:hover { opacity: 1; }
-
-    /* ── Settings modal ── */
-    .settings-form { display: flex; flex-direction: column; gap: 14px; }
-    .form-group label { font-size: 13px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 6px; }
-    .form-group input {
-      width: 100%;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color .15s;
-      font-family: inherit;
-    }
-    .form-group input:focus { border-color: var(--accent); }
-    .form-group .hint { font-size: 11px; color: var(--text-2); margin-top: 4px; line-height: 1.5; }
-
-    /* Read-only info row */
-    .readonly-field {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 14px;
-      color: var(--text-2);
-      font-family: monospace;
-      letter-spacing: .02em;
-    }
-    .readonly-field .lock { font-size: 12px; opacity: .5; }
-
-    .settings-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 4px 0;
-    }
-    .settings-actions { display: flex; gap: 8px; }
-    .settings-actions .btn { flex: 1; }
-
-    /* ── Tabs ── */
-    .tabs { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; margin-bottom: 16px; }
-    .tab {
-      flex: 1; padding: 8px; text-align: center;
-      font-size: 13px; font-weight: 600; border-radius: 6px;
-      cursor: pointer; color: var(--text-2);
-      transition: background .15s, color .15s;
-    }
-    .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    .submit-btn:hover { opacity: .88; }
+    .submit-btn:disabled { opacity: .4; cursor: default; }
 
     /* ── Toast ── */
     .toast {
       position: fixed; bottom: 24px; left: 50%;
       transform: translateX(-50%) translateY(80px);
-      background: #1a1d23; color: #fff;
-      border-radius: 99px; padding: 10px 20px;
-      font-size: 14px; font-weight: 500;
+      background: #1a1d23; color: #fff; border-radius: 99px;
+      padding: 10px 20px; font-size: 14px; font-weight: 500;
       z-index: 999; transition: transform .3s; white-space: nowrap;
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* ── Share banner ── */
-    .share-banner {
-      background: var(--accent-light);
-      border: 1.5px solid #bfdbfe;
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      font-size: 13px;
-      color: #1e40af;
-    }
-    .share-banner .icon { font-size: 20px; flex-shrink: 0; }
+    /* ── State boxes ── */
+    .state-box { text-align: center; padding: 48px 20px; color: var(--text-2); }
+    .state-box .icon { font-size: 36px; margin-bottom: 12px; }
+    .state-box p { font-size: 14px; line-height: 1.6; }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>會議<span>簽名</span>系統</h1>
-  <button class="btn-icon" id="settingsBtn" title="設定">⚙️</button>
-</header>
+<!-- ══════════════════════════════════════
+     ADMIN WIZARD (no hash)
+══════════════════════════════════════ -->
+<div id="adminPage" class="page active">
 
-<main>
-  <!-- Share banner (shown when opened via share link) -->
-  <div class="share-banner" id="shareBanner" style="display:none">
-    <span class="icon">🔗</span>
-    <span>已透過分享連結載入設定，請直接點選下方名單進行簽名。</span>
+  <header>
+    <h1>會議<span>簽名</span>系統</h1>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="goStep(1)" title="重新開始">↩</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Step indicator -->
+    <div class="steps" id="stepIndicator">
+      <div class="step-item active" id="si1">
+        <div class="step-circle">1</div>
+        <div class="step-label">會議資訊</div>
+      </div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step-item" id="si2">
+        <div class="step-circle">2</div>
+        <div class="step-label">名單與設定</div>
+      </div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step-item" id="si3">
+        <div class="step-circle">3</div>
+        <div class="step-label">分享連結</div>
+      </div>
+    </div>
+
+    <!-- ── Step 1: Meeting info ── -->
+    <div id="step1" class="step-screen">
+      <div class="card">
+        <div class="card-title">會議資訊</div>
+        <div class="card-sub">輸入本次會議的名稱與日期</div>
+        <div class="form-group">
+          <label>會議名稱</label>
+          <input type="text" id="meetingName" placeholder="如：2026 年第二季董事會議" />
+        </div>
+        <div class="form-group">
+          <label>會議日期</label>
+          <input type="date" id="meetingDate" />
+        </div>
+      </div>
+      <button class="btn" onclick="nextStep1()">下一步 →</button>
+    </div>
+
+    <!-- ── Step 2: CSV + Token ── -->
+    <div id="step2" class="step-screen" style="display:none">
+      <div class="card">
+        <div class="card-title">名單與設定</div>
+        <div class="card-sub">上傳與會名單 CSV，並確認 GitHub 設定。若上次已設定，沿用即可直接下一步。</div>
+
+        <div class="form-group">
+          <label>與會名單（CSV 格式）</label>
+          <div id="csvZone" class="csv-zone" onclick="document.getElementById('csvInput').click()">
+            <input type="file" id="csvInput" accept=".csv,text/csv" onchange="handleCsv(event)">
+            <span class="csv-icon">📄</span>
+            <span id="csvZoneLabel">點擊選擇 CSV 檔案</span>
+          </div>
+          <div id="csvBadge" class="csv-badge" style="display:none; margin-top:8px">
+            <span>✅ <span id="csvFilename"></span></span>
+            <button onclick="clearCsv(event)">✕ 清除</button>
+          </div>
+          <div class="hint">CSV 需包含「姓名」與「職稱」欄位標題</div>
+        </div>
+
+        <div class="form-group">
+          <label>GitHub Personal Access Token</label>
+          <input type="password" id="cfgToken" placeholder="ghp_… 或 github_pat_…" />
+          <div class="hint">⚠️ 僅存於您的瀏覽器，不會上傳至任何第三方。請授予此 repo 的 Contents 寫入權限。</div>
+        </div>
+
+        <div class="form-group">
+          <label>GitHub Repository（自動偵測）</label>
+          <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:11px 14px;font-size:14px;color:var(--text-2);font-family:monospace;display:flex;justify-content:space-between">
+            <span id="displayRepo">—</span>
+            <span style="opacity:.5;font-size:12px">🔒</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn secondary" onclick="goStep(1)">← 上一步</button>
+        <button class="btn" onclick="nextStep2()">確認並生成連結 →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Share link ── -->
+    <div id="step3" class="step-screen" style="display:none">
+      <div class="card">
+        <div class="card-title">🎉 分享連結已生成</div>
+        <div class="card-sub" id="step3Sub">將以下連結傳給與會成員，成員點開即可簽名。</div>
+
+        <div class="share-box">
+          <div class="share-url" id="shareUrl">—</div>
+          <button class="copy-btn" id="copyBtn" onclick="copyLink()">📋 複製連結</button>
+        </div>
+
+        <div class="info-row"><span class="info-icon">📱</span>成員開啟連結後直接看到名單，點擊姓名即可簽名，無需任何設定。</div>
+        <div class="info-row"><span class="info-icon">♻️</span>同一連結可重複使用，成員可隨時重新簽名（覆蓋舊的）。</div>
+        <div class="info-row"><span class="info-icon">📁</span>簽名檔案存入 GitHub repo 的 <code>signatures/</code> 資料夾。</div>
+      </div>
+
+      <button class="btn secondary" onclick="goStep(1)">← 重新設定新會議</button>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /adminPage -->
+
+
+<!-- ══════════════════════════════════════
+     MEMBER SIGNING PAGE (has hash)
+══════════════════════════════════════ -->
+<div id="memberPage" class="page">
+
+  <div class="meeting-header">
+    <div class="meeting-title" id="memberMeetingTitle">會議簽名</div>
+    <div class="meeting-date"  id="memberMeetingDate"></div>
   </div>
 
-  <!-- Meeting Panel -->
-  <div class="meeting-panel">
-    <h2>會議資訊</h2>
-    <div class="input-row">
-      <input type="text" id="meetingName" placeholder="會議名稱（如：董事會議）" />
-      <input type="date" id="meetingDate" />
-      <button class="btn" id="loadBtn" onclick="loadAttendees()">載入名單</button>
+  <div class="list-container">
+    <div id="listArea">
+      <div class="state-box"><div class="icon">⏳</div><p>載入名單中…</p></div>
     </div>
   </div>
 
-  <!-- List area -->
-  <div id="listArea">
-    <div class="state-box">
-      <div class="icon">📋</div>
-      <p>輸入會議名稱後點擊「載入名單」</p>
-    </div>
-  </div>
-</main>
+</div><!-- /memberPage -->
 
-<!-- Sign Modal -->
+
+<!-- Sign Modal (shared) -->
 <div class="overlay" id="signOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -437,172 +421,156 @@
       </div>
       <button class="close-btn" onclick="closeSignModal()">✕</button>
     </div>
-
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('sign')">✍️ 手寫簽名</div>
-      <div class="tab" onclick="switchTab('photo')">📷 上傳照片</div>
+    <div class="canvas-wrapper">
+      <canvas id="sigCanvas" height="160"></canvas>
+      <div class="canvas-hint" id="canvasHint">請在此處簽名</div>
     </div>
-
-    <!-- Sign tab -->
-    <div class="tab-panel active" id="tabSign">
-      <div class="canvas-wrapper">
-        <canvas id="sigCanvas" height="160"></canvas>
-        <div class="canvas-hint" id="canvasHint">請在此處簽名</div>
-      </div>
-      <div class="canvas-actions">
-        <button class="btn secondary" style="flex:1" onclick="clearCanvas()">清除重寫</button>
-      </div>
+    <div class="canvas-actions">
+      <button class="btn secondary" onclick="clearCanvas()">清除重寫</button>
     </div>
-
-    <!-- Photo tab -->
-    <div class="tab-panel" id="tabPhoto">
-      <div class="photo-section">
-        <label>上傳簽名照片或現場照片（選填）</label>
-        <div id="photoDropZone" class="photo-drop" onclick="document.getElementById('photoInput').click()">
-          <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhotoSelect(event)">
-          <div class="drop-icon">📷</div>
-          <p>點擊拍照或選擇圖片</p>
-        </div>
-        <div id="photoPreview" class="photo-preview" style="display:none">
-          <img id="previewImg" src="" alt="預覽">
-          <button class="remove-photo" onclick="clearPhoto()">✕</button>
-        </div>
-      </div>
-    </div>
-
     <div class="upload-status" id="uploadStatus"></div>
-    <button class="btn" style="width:100%" id="submitBtn" onclick="submitSignature()">確認簽名並上傳</button>
+    <button class="submit-btn" id="submitBtn" onclick="submitSignature()">確認簽名並上傳</button>
   </div>
 </div>
 
-<!-- Settings Modal -->
-<div class="overlay" id="settingsOverlay">
-  <div class="modal">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title">系統設定</div>
-        <div class="modal-subtitle">管理員設定後複製分享連結給與會成員</div>
-      </div>
-      <button class="close-btn" onclick="closeSettings()">✕</button>
-    </div>
-
-    <div class="settings-form">
-
-      <!-- Editable fields -->
-      <div class="form-group">
-        <label>名單 CSV 檔案</label>
-        <div id="csvUploadZone" class="csv-upload-zone" onclick="document.getElementById('csvFileInput').click()">
-          <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none" onchange="handleCsvUpload(event)">
-          <span class="csv-icon">📄</span>
-          <span id="csvUploadLabel">點擊選擇 CSV 檔案</span>
-        </div>
-        <div id="csvLoadedBadge" class="csv-loaded-badge" style="display:none">
-          <span>✅ <span id="csvFilename"></span></span>
-          <button onclick="clearCsvData(event)">✕ 清除</button>
-        </div>
-        <div class="hint">CSV 須包含「姓名」與「職稱」欄位標題。上傳後內容會存入瀏覽器，分享連結自動帶入名單。</div>
-      </div>
-
-      <div class="form-group">
-        <label>GitHub Personal Access Token</label>
-        <input type="password" id="cfgToken" placeholder="ghp_… 或 github_pat_…" />
-        <div class="hint">⚠️ Token 僅存於您的瀏覽器，不會傳送至任何第三方。建議使用 Fine-grained PAT，只授予此 repo 的 Contents 寫入權限。</div>
-      </div>
-
-      <hr class="settings-divider">
-
-      <!-- Read-only info -->
-      <div class="form-group">
-        <label>GitHub Repository（自動偵測）</label>
-        <div class="readonly-field">
-          <span id="displayRepo">—</span>
-          <span class="lock">🔒</span>
-        </div>
-        <div class="hint">由 GitHub Pages 網址自動判斷，無需手動填寫</div>
-      </div>
-
-      <div class="form-group">
-        <label>GitHub Branch</label>
-        <div class="readonly-field">
-          <span>main</span>
-          <span class="lock">🔒</span>
-        </div>
-      </div>
-
-      <hr class="settings-divider">
-
-      <div class="settings-actions">
-        <button class="btn secondary" onclick="copyShareLink()">🔗 複製分享連結</button>
-        <button class="btn" onclick="saveSettings()">儲存設定</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── Config ───────────────────────────────────────────────────────────────
+// ══════════════════════════════════════
+// CONFIG & CONSTANTS
+// ══════════════════════════════════════
 const CFG_KEY      = 'msig_config';
 const CSV_DATA_KEY = 'msig_csv_data';
 const CSV_NAME_KEY = 'msig_csv_name';
 
-let config = {
-  token : ''
-};
+let config = { token: '' };
 
-// Auto-detect repo from GitHub Pages URL
 function detectRepo() {
   const host = window.location.hostname;
   const path = window.location.pathname;
   if (host.endsWith('.github.io')) {
     const owner = host.replace('.github.io', '');
     const parts = path.split('/').filter(Boolean);
-    const repo  = parts.length > 0 ? parts[0] : `${owner}.github.io`;
-    return `${owner}/${repo}`;
+    const repo  = parts.length > 0 ? parts[0] : owner + '.github.io';
+    return owner + '/' + repo;
   }
-  return null; // localhost / custom domain
+  return null;
 }
+const REPO   = detectRepo();
+const BRANCH = 'main';
 
-const DETECTED_REPO   = detectRepo();
-const DETECTED_BRANCH = 'main';
-
-function updateRepoDisplay() {
-  const el = document.getElementById('displayRepo');
-  if (DETECTED_REPO) {
-    el.textContent = DETECTED_REPO;
-    el.style.color = 'var(--text)';
-  } else {
-    el.textContent = '本機開發模式（請設定 repo）';
-    el.style.color = 'var(--text-2)';
-  }
-}
-
-// ─── Load / Save config ───────────────────────────────────────────────────
 function loadConfig() {
-  try {
-    const saved = localStorage.getItem(CFG_KEY);
-    if (saved) config = { ...config, ...JSON.parse(saved) };
-  } catch(e) {}
-  syncSettingsForm();
+  try { const s = localStorage.getItem(CFG_KEY); if (s) config = { ...config, ...JSON.parse(s) }; } catch(e) {}
 }
-
-function syncSettingsForm() {
-  document.getElementById('cfgToken').value = config.token;
-  updateRepoDisplay();
-  updateCsvBadge();
-}
-
-function saveSettings() {
-  config.token = document.getElementById('cfgToken').value.trim();
+function saveConfig() {
   localStorage.setItem(CFG_KEY, JSON.stringify(config));
-  closeSettings();
-  showToast('✅ 設定已儲存');
 }
 
-// ─── CSV file upload ────────────────────────────────────────────────────────
-function handleCsvUpload(e) {
+// ══════════════════════════════════════
+// ROUTING
+// ══════════════════════════════════════
+function init() {
+  loadConfig();
+  document.getElementById('meetingDate').valueAsDate = new Date();
+  document.getElementById('displayRepo').textContent = REPO || '（本機無法自動偵測）';
+
+  // Restore token field
+  if (config.token) document.getElementById('cfgToken').value = config.token;
+  updateCsvBadge();
+
+  const hash = window.location.hash.slice(1);
+  if (hash) {
+    // Member mode
+    showPage('memberPage');
+    loadMemberPage(hash);
+  } else {
+    // Admin mode
+    showPage('adminPage');
+    goStep(1);
+  }
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════
+// ADMIN WIZARD
+// ══════════════════════════════════════
+let currentStep = 1;
+
+function goStep(n) {
+  currentStep = n;
+  // Show/hide screens
+  [1, 2, 3].forEach(i => {
+    document.getElementById('step' + i).style.display = (i === n) ? 'block' : 'none';
+  });
+  // Update indicator
+  [1, 2, 3].forEach(i => {
+    const si = document.getElementById('si' + i);
+    si.classList.remove('active', 'done');
+    if (i < n)  si.classList.add('done');
+    if (i === n) si.classList.add('active');
+    // Update circle
+    si.querySelector('.step-circle').textContent = (i < n) ? '✓' : i;
+  });
+  [1, 2].forEach(i => {
+    const sl = document.getElementById('sl' + i);
+    sl.classList.toggle('done', i < n);
+  });
+}
+
+function nextStep1() {
+  const name = document.getElementById('meetingName').value.trim();
+  const date = document.getElementById('meetingDate').value;
+  if (!name) { showToast('⚠️ 請輸入會議名稱'); return; }
+  if (!date) { showToast('⚠️ 請選擇會議日期'); return; }
+  goStep(2);
+}
+
+function nextStep2() {
+  const csvData = localStorage.getItem(CSV_DATA_KEY);
+  const token   = document.getElementById('cfgToken').value.trim();
+  if (!csvData) { showToast('⚠️ 請上傳 CSV 名單'); return; }
+  if (!token)   { showToast('⚠️ 請填入 GitHub Token'); return; }
+
+  config.token = token;
+  saveConfig();
+
+  const link = buildShareLink();
+  document.getElementById('shareUrl').textContent = link;
+  document.getElementById('step3Sub').textContent =
+    '「' + document.getElementById('meetingName').value.trim() + '」的簽名連結已生成。';
+  goStep(3);
+}
+
+function buildShareLink() {
+  const payload = {
+    m : document.getElementById('meetingName').value.trim(),
+    d : document.getElementById('meetingDate').value,
+    t : config.token,
+    c : localStorage.getItem(CSV_DATA_KEY) || '',
+    n : localStorage.getItem(CSV_NAME_KEY) || 'attendees.csv'
+  };
+  const hash = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  return window.location.origin + window.location.pathname + '#' + hash;
+}
+
+function copyLink() {
+  const url = document.getElementById('shareUrl').textContent;
+  const btn = document.getElementById('copyBtn');
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = '✅ 已複製！';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 複製連結'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => { prompt('請手動複製：', url); });
+}
+
+// ══════════════════════════════════════
+// CSV HANDLING
+// ══════════════════════════════════════
+function handleCsv(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -610,25 +578,26 @@ function handleCsvUpload(e) {
     localStorage.setItem(CSV_DATA_KEY, ev.target.result);
     localStorage.setItem(CSV_NAME_KEY, file.name);
     updateCsvBadge();
-    showToast(`✅ 已載入：${file.name}`);
+    showToast('✅ 已載入：' + file.name);
   };
   reader.readAsText(file, 'UTF-8');
 }
 
-function clearCsvData(e) {
+function clearCsv(e) {
   e && e.stopPropagation();
   localStorage.removeItem(CSV_DATA_KEY);
   localStorage.removeItem(CSV_NAME_KEY);
-  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvInput').value = '';
   updateCsvBadge();
   showToast('已清除名單');
 }
 
 function updateCsvBadge() {
-  const name   = localStorage.getItem(CSV_NAME_KEY);
-  const badge  = document.getElementById('csvLoadedBadge');
-  const zone   = document.getElementById('csvUploadZone');
-  const label  = document.getElementById('csvUploadLabel');
+  const name  = localStorage.getItem(CSV_NAME_KEY);
+  const badge = document.getElementById('csvBadge');
+  const zone  = document.getElementById('csvZone');
+  const label = document.getElementById('csvZoneLabel');
+  if (!badge) return;
   if (name) {
     badge.style.display = 'flex';
     document.getElementById('csvFilename').textContent = name;
@@ -641,206 +610,123 @@ function updateCsvBadge() {
   }
 }
 
-// ─── Share link (URL hash) ─────────────────────────────────────────────────
-function buildSharePayload() {
-  const meetingName = document.getElementById('meetingName').value.trim();
-  const meetingDate = document.getElementById('meetingDate').value;
-  return {
-    csvData     : localStorage.getItem(CSV_DATA_KEY) || '',
-    csvName     : localStorage.getItem(CSV_NAME_KEY) || 'attendees.csv',
-    token       : document.getElementById('cfgToken').value.trim() || config.token,
-    meetingName : meetingName,
-    meetingDate : meetingDate
-  };
-}
-
-function copyShareLink() {
-  const payload = buildSharePayload();
-  if (!payload.csvData) {
-    showToast('⚠️ 請先上傳 CSV 名單'); return;
-  }
-  if (!payload.token) {
-    showToast('⚠️ 請先填寫 GitHub Token'); return;
-  }
-  if (!payload.meetingName) {
-    showToast('⚠️ 請先在主畫面輸入會議名稱'); return;
-  }
-
-  // Save current settings first
-  config.token = payload.token;
-  localStorage.setItem(CFG_KEY, JSON.stringify(config));
-
-  try {
-    const hash = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    const url  = `${window.location.origin}${window.location.pathname}#${hash}`;
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('✅ 分享連結已複製！可直接傳給與會成員');
-    }).catch(() => {
-      // Fallback: prompt
-      prompt('請複製以下連結：', url);
-    });
-  } catch(e) {
-    showToast('❌ 產生連結失敗：' + e.message);
-  }
-}
-
-// Parse hash config on page load
-function parseHashConfig() {
-  const hash = window.location.hash.slice(1);
-  if (!hash) return false;
-  try {
-    const data = JSON.parse(decodeURIComponent(escape(atob(hash))));
-    if (data.csvData) { localStorage.setItem(CSV_DATA_KEY, data.csvData); }
-    if (data.csvName) { localStorage.setItem(CSV_NAME_KEY, data.csvName); }
-    if (data.token)   { config.token = data.token; }
-    if (data.meetingName) document.getElementById('meetingName').value = data.meetingName;
-    if (data.meetingDate) document.getElementById('meetingDate').value = data.meetingDate;
-    // Save to localStorage so refreshing keeps the config
-    localStorage.setItem(CFG_KEY, JSON.stringify(config));
-    return true;
-  } catch(e) {
-    return false;
-  }
-}
-
-// ─── Settings modal ────────────────────────────────────────────────────────
-document.getElementById('settingsBtn').onclick = openSettings;
-
-function openSettings() {
-  syncSettingsForm();
-  document.getElementById('settingsOverlay').classList.add('open');
-}
-function closeSettings() {
-  document.getElementById('settingsOverlay').classList.remove('open');
-}
-
-// ─── Attendees ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════
+// MEMBER PAGE
+// ══════════════════════════════════════
 let attendees = [];
 let signedSet = new Set();
-let currentAttendee = null;
+let memberConfig = {};
 
-const SESSION_KEY = () => {
-  const m = document.getElementById('meetingName').value.trim();
-  const d = document.getElementById('meetingDate').value;
-  return `msig_signed_${m}_${d}`;
-};
-
-function loadSignedState() {
+function loadMemberPage(hash) {
   try {
-    const saved = localStorage.getItem(SESSION_KEY());
-    if (saved) signedSet = new Set(JSON.parse(saved));
-    else signedSet = new Set();
-  } catch(e) { signedSet = new Set(); }
-}
+    const data = JSON.parse(decodeURIComponent(escape(atob(hash))));
+    memberConfig = { token: data.t, repo: REPO, meetingName: data.m, meetingDate: data.d };
 
-function saveSignedState() {
-  localStorage.setItem(SESSION_KEY(), JSON.stringify([...signedSet]));
-}
+    document.getElementById('memberMeetingTitle').textContent = data.m || '會議簽名';
+    document.getElementById('memberMeetingDate').textContent  = data.d || '';
 
-async function loadAttendees() {
-  const meetingName = document.getElementById('meetingName').value.trim();
-  const meetingDate = document.getElementById('meetingDate').value;
+    if (data.c) {
+      // Persist CSV for this session
+      localStorage.setItem(CSV_DATA_KEY, data.c);
+      if (data.n) localStorage.setItem(CSV_NAME_KEY, data.n);
+    }
 
-  if (!meetingName) { showToast('⚠️ 請輸入會議名稱'); return; }
+    const csvData = data.c || localStorage.getItem(CSV_DATA_KEY);
+    if (!csvData) {
+      document.getElementById('listArea').innerHTML =
+        '<div class="state-box"><div class="icon">❌</div><p>連結中未包含名單資料，請聯絡管理員重新產生連結。</p></div>';
+      return;
+    }
 
-  const csvData = localStorage.getItem(CSV_DATA_KEY);
-  if (!csvData) { showToast('⚠️ 請先在設定中上傳 CSV 名單'); openSettings(); return; }
-
-  const btn = document.getElementById('loadBtn');
-  btn.disabled = true;
-  btn.textContent = '載入中…';
-
-  try {
     attendees = parseCSV(csvData);
     loadSignedState();
-    renderList(meetingName, meetingDate);
-    showToast(`✅ 已載入 ${attendees.length} 筆名單`);
-  } catch(err) {
+    renderList();
+  } catch(e) {
     document.getElementById('listArea').innerHTML =
-      `<div class="state-box"><div class="icon">❌</div><p>解析失敗：${err.message}</p></div>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '載入名單';
+      '<div class="state-box"><div class="icon">❌</div><p>連結格式錯誤，請聯絡管理員。</p></div>';
   }
+}
+
+function sessionKey() {
+  return 'msig_signed_' + memberConfig.meetingName + '_' + memberConfig.meetingDate;
+}
+function loadSignedState() {
+  try {
+    const s = localStorage.getItem(sessionKey());
+    signedSet = s ? new Set(JSON.parse(s)) : new Set();
+  } catch(e) { signedSet = new Set(); }
+}
+function saveSignedState() {
+  localStorage.setItem(sessionKey(), JSON.stringify([...signedSet]));
 }
 
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
+  const lines   = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-
-  const headers  = splitCSVLine(lines[0]).map(h => h.trim());
+  const headers  = splitCSV(lines[0]).map(h => h.trim());
   const nameIdx  = headers.indexOf('姓名') >= 0 ? headers.indexOf('姓名') : 0;
-  const titleIdx = headers.indexOf('職稱');   // -1 if not present
-
+  const titleIdx = headers.indexOf('職稱');
   return lines.slice(1).map((line, i) => {
-    const cols  = splitCSVLine(line);
-    const name  = cols[nameIdx]?.trim()                             || `第 ${i+1} 位`;
+    const cols  = splitCSV(line);
+    const name  = cols[nameIdx]?.trim()  || ('第' + (i+1) + '位');
     const title = titleIdx >= 0 ? (cols[titleIdx]?.trim() || '') : '';
-    return { name, title, id: `att_${i}` };
+    return { name, title, id: 'att_' + i };
   }).filter(a => a.name);
 }
 
-function splitCSVLine(line) {
-  const result = [];
-  let cur = '', inQ = false;
+function splitCSV(line) {
+  const res = []; let cur = '', inQ = false;
   for (const c of line) {
     if (c === '"') { inQ = !inQ; continue; }
-    if (c === ',' && !inQ) { result.push(cur); cur = ''; continue; }
+    if (c === ',' && !inQ) { res.push(cur); cur = ''; continue; }
     cur += c;
   }
-  result.push(cur);
-  return result;
+  res.push(cur);
+  return res;
 }
 
-function renderList(meetingName, meetingDate) {
+function renderList() {
   const listArea = document.getElementById('listArea');
   const signed   = attendees.filter(a => signedSet.has(a.id)).length;
   const total    = attendees.length;
   const pct      = total > 0 ? Math.round(signed / total * 100) : 0;
 
-  listArea.innerHTML = `
-    <div class="status-bar">
-      <span class="label">簽名進度</span>
-      <span class="count">${signed} / ${total} 人（${pct}%）</span>
-    </div>
-    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-    <div class="attendee-list" id="attendeeList"></div>
-  `;
+  listArea.innerHTML =
+    '<div class="status-bar"><span class="label">簽名進度</span><span class="count">' + signed + ' / ' + total + ' 人（' + pct + '%）</span></div>' +
+    '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="attendee-list" id="attendeeList"></div>';
 
   const list = document.getElementById('attendeeList');
   attendees.forEach(att => {
     const isSigned = signedSet.has(att.id);
     const card = document.createElement('div');
-    card.className = `attendee-card${isSigned ? ' signed' : ''}`;
-    card.dataset.id = att.id;
-    card.innerHTML = `
-      <div class="avatar">${isSigned ? '✓' : att.name.slice(0, 1)}</div>
-      <div class="attendee-info">
-        <div class="attendee-name">${att.name}</div>
-        ${att.title ? `<div class="attendee-title">${att.title}</div>` : ''}
-      </div>
-      <div class="status-badge">${isSigned ? '已簽名 ✓' : '待簽名'}</div>
-    `;
-    if (!isSigned) {
-      card.onclick = () => openSignModal(att, meetingName, meetingDate);
-    }
+    card.className = 'attendee-card' + (isSigned ? ' signed' : '');
+    card.innerHTML =
+      '<div class="avatar">' + (isSigned ? '✓' : att.name.slice(0,1)) + '</div>' +
+      '<div class="attendee-info">' +
+        '<div class="attendee-name">' + att.name + '</div>' +
+        (att.title ? '<div class="attendee-title">' + att.title + '</div>' : '') +
+      '</div>' +
+      '<div class="status-badge">' + (isSigned ? '已簽名 ✓<br><span style="font-weight:400;opacity:.7;font-size:10px">點擊重簽</span>' : '待簽名') + '</div>';
+    card.onclick = () => openSignModal(att);
     list.appendChild(card);
   });
 }
 
-// ─── Sign Modal ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════
+// SIGN MODAL
+// ══════════════════════════════════════
 let canvas, ctx, isDrawing = false, hasDrawn = false;
-let photoFile = null, photoDataUrl = null;
+let currentAttendee = null;
 
-function openSignModal(att, meetingName, meetingDate) {
-  currentAttendee = { ...att, meetingName, meetingDate };
+function openSignModal(att) {
+  currentAttendee = att;
   document.getElementById('signModalName').textContent = att.name;
-  document.getElementById('signModalSub').textContent  = [att.title, meetingName].filter(Boolean).join('・');
-  document.getElementById('uploadStatus').className    = 'upload-status';
-  document.getElementById('uploadStatus').textContent  = '';
-  clearPhoto();
+  document.getElementById('signModalSub').textContent  =
+    [att.title, memberConfig.meetingName].filter(Boolean).join('・');
+  document.getElementById('uploadStatus').className   = 'upload-status';
+  document.getElementById('uploadStatus').textContent = '';
   document.getElementById('signOverlay').classList.add('open');
-  switchTab('sign');
   setTimeout(initCanvas, 50);
 }
 
@@ -851,26 +737,23 @@ function closeSignModal() {
 
 function initCanvas() {
   canvas = document.getElementById('sigCanvas');
-  const wrapper = canvas.parentElement;
-  canvas.width  = wrapper.offsetWidth * devicePixelRatio;
+  const w = canvas.parentElement.offsetWidth;
+  canvas.width  = w * devicePixelRatio;
   canvas.height = 160 * devicePixelRatio;
   canvas.style.height = '160px';
   ctx = canvas.getContext('2d');
   ctx.scale(devicePixelRatio, devicePixelRatio);
-  ctx.strokeStyle = '#1a1d23';
-  ctx.lineWidth   = 2.5;
-  ctx.lineCap     = 'round';
-  ctx.lineJoin    = 'round';
+  ctx.strokeStyle = '#1a1d23'; ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   hasDrawn = false;
   document.getElementById('canvasHint').style.opacity = '1';
 }
 
 function getPos(e) {
-  const rect = canvas.getBoundingClientRect();
-  const src  = e.touches ? e.touches[0] : e;
-  return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  const r = canvas.getBoundingClientRect();
+  const s = e.touches ? e.touches[0] : e;
+  return { x: s.clientX - r.left, y: s.clientY - r.top };
 }
-
 function startDraw(e) {
   e.preventDefault(); isDrawing = true;
   const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
@@ -902,161 +785,80 @@ document.addEventListener('DOMContentLoaded', () => {
   c.addEventListener('touchend',   endDraw,   { passive: false });
 });
 
-// ─── Tabs ──────────────────────────────────────────
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', (i === 0 && tab === 'sign') || (i === 1 && tab === 'photo'));
-  });
-  document.getElementById('tabSign').classList.toggle('active',  tab === 'sign');
-  document.getElementById('tabPhoto').classList.toggle('active', tab === 'photo');
-}
-
-// ─── Photo ──────────────────────────────────────────
-function handlePhotoSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  photoFile = file;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    photoDataUrl = ev.target.result;
-    document.getElementById('photoDropZone').style.display = 'none';
-    document.getElementById('photoPreview').style.display  = 'block';
-    document.getElementById('previewImg').src = photoDataUrl;
-  };
-  reader.readAsDataURL(file);
-}
-
-function clearPhoto() {
-  photoFile = null; photoDataUrl = null;
-  document.getElementById('photoInput').value   = '';
-  document.getElementById('photoDropZone').style.display = 'block';
-  document.getElementById('photoPreview').style.display  = 'none';
-  document.getElementById('previewImg').src = '';
-}
-
-// ─── Submit ──────────────────────────────────────────
+// ══════════════════════════════════════
+// UPLOAD
+// ══════════════════════════════════════
 async function submitSignature() {
   if (!currentAttendee) return;
+  if (!hasDrawn) { showStatus('⚠️ 請先簽名', 'error'); return; }
 
-  const hasSignature = hasDrawn;
-  const hasPhoto     = !!photoDataUrl;
-
-  if (!hasSignature && !hasPhoto) {
-    showStatus('\u26a0\ufe0f \u8acb\u5148\u7c3d\u540d\u6216\u4e0a\u50b3\u7167\u7247', 'error'); return;
-  }
-
-  const repo = DETECTED_REPO;
-  if (!config.token) { showStatus('\u26a0\ufe0f \u7f3a\u5c11 GitHub Token\uff0c\u8acb\u806f\u7d61\u7ba1\u7406\u54e1', 'error'); return; }
-  if (!repo)         { showStatus('\u26a0\ufe0f \u7121\u6cd5\u5075\u6e2c GitHub Repo\uff0c\u8acb\u78ba\u8a8d\u5df2\u90e8\u7f72\u81f3 GitHub Pages', 'error'); return; }
+  const repo = memberConfig.repo || REPO;
+  if (!memberConfig.token) { showStatus('⚠️ 缺少 Token，請聯絡管理員', 'error'); return; }
+  if (!repo)               { showStatus('⚠️ 無法偵測 Repo，請確認已部署至 GitHub Pages', 'error'); return; }
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
-  showStatus('\u23f3 \u4e0a\u50b3\u4e2d\u2026', 'loading');
+  showStatus('⏳ 上傳中…', 'loading');
 
-  const timestamp = Date.now();
-  const safeName  = currentAttendee.name.replace(/[\/\\:*?"<>|]/g, '_');
-  const folder    = ('signatures/' + currentAttendee.meetingName + '_' + (currentAttendee.meetingDate || timestamp)).replace(/\s/g, '_');
+  const ts       = Date.now();
+  const safeName = currentAttendee.name.replace(/[\/\\:*?"<>|]/g, '_');
+  const folder   = ('signatures/' + memberConfig.meetingName + '_' + (memberConfig.meetingDate || ts)).replace(/\s/g, '_');
+  const path     = folder + '/' + safeName + '_sig_' + ts + '.png';
+  const b64      = canvas.toDataURL('image/png').split(',')[1];
+  const msg      = '簽名：' + currentAttendee.name + ' [' + memberConfig.meetingName + ']';
 
   try {
-    const uploads = [];
-
-    if (hasSignature) {
-      const sigBase64 = canvas.toDataURL('image/png').split(',')[1];
-      uploads.push(uploadToGitHub(
-        repo, folder + '/' + safeName + '_sig_' + timestamp + '.png', sigBase64,
-        '\u7c3d\u540d\uff1a' + currentAttendee.name + ' [' + currentAttendee.meetingName + ']'
-      ));
-    }
-
-    if (hasPhoto) {
-      const photoBase64 = photoDataUrl.split(',')[1];
-      const ext = photoFile && photoFile.type && photoFile.type.includes('jpeg') ? 'jpg' : 'png';
-      uploads.push(uploadToGitHub(
-        repo, folder + '/' + safeName + '_photo_' + timestamp + '.' + ext, photoBase64,
-        '\u7167\u7247\uff1a' + currentAttendee.name + ' [' + currentAttendee.meetingName + ']'
-      ));
-    }
-
-    await Promise.all(uploads);
-
+    await ghPut(repo, path, b64, msg);
     signedSet.add(currentAttendee.id);
     saveSignedState();
-    showStatus('\u2705 \u4e0a\u50b3\u6210\u529f\uff01', 'success');
-    setTimeout(() => {
-      closeSignModal();
-      renderList(currentAttendee.meetingName, currentAttendee.meetingDate);
-    }, 1200);
+    showStatus('✅ 上傳成功！', 'success');
+    setTimeout(() => { closeSignModal(); renderList(); }, 1200);
   } catch(err) {
-    showStatus('\u274c \u4e0a\u50b3\u5931\u6557\uff1a' + err.message, 'error');
+    showStatus('❌ 上傳失敗：' + err.message, 'error');
   } finally {
     btn.disabled = false;
   }
 }
 
-async function uploadToGitHub(repo, path, base64Content, message) {
-  const parts = repo.split('/');
-  const owner = parts[0], repoName = parts[1];
+async function ghPut(repo, path, b64, message) {
+  const [owner, repoName] = repo.split('/');
   const url = 'https://api.github.com/repos/' + owner + '/' + repoName + '/contents/' + path;
   const headers = {
-    'Authorization': 'Bearer ' + config.token,
+    'Authorization': 'Bearer ' + memberConfig.token,
     'Content-Type' : 'application/json',
     'Accept'       : 'application/vnd.github+json'
   };
-
   let sha;
-  try {
-    const chk = await fetch(url, { headers });
-    if (chk.ok) sha = (await chk.json()).sha;
-  } catch(e) {}
-
-  const body = { message: message, content: base64Content, branch: DETECTED_BRANCH };
+  try { const r = await fetch(url, { headers }); if (r.ok) sha = (await r.json()).sha; } catch(e) {}
+  const body = { message, content: b64, branch: BRANCH };
   if (sha) body.sha = sha;
-
-  const res = await fetch(url, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'GitHub API ' + res.status);
-  }
+  const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'GitHub API ' + res.status); }
   return res.json();
 }
 
-// ─── Helpers ──────────────────────────────────────────
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
 function showStatus(msg, type) {
   const el = document.getElementById('uploadStatus');
-  el.textContent = msg;
-  el.className = 'upload-status ' + type;
+  el.textContent = msg; el.className = 'upload-status ' + type;
 }
 
-function showToast(msg, dur) {
-  dur = dur || 2800;
+function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), dur);
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-document.querySelectorAll('.overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
+document.getElementById('signOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('signOverlay')) closeSignModal();
 });
 
-// ─── Init ──────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadConfig();
-  document.getElementById('meetingDate').valueAsDate = new Date();
-
-  const fromHash = parseHashConfig();
-  if (fromHash) {
-    document.getElementById('shareBanner').style.display = 'flex';
-    syncSettingsForm();
-    if (document.getElementById('meetingName').value.trim()) {
-      loadAttendees();
-    }
-  } else if (!localStorage.getItem(CSV_DATA_KEY) || !config.token) {
-    setTimeout(openSettings, 400);
-  }
-});
+// ══════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
